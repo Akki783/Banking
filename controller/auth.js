@@ -12,7 +12,8 @@ const createUser = async (req, res) => {
         if (!name || !email || !password || !phoneNumber || !accountType) {
             return res.status(400).json({
                 success: false,
-                message: "All fields are required!"
+                message: "All fields are required!",
+                name, email, password, phoneNumber, accountType, balance, url
             });
         }
 
@@ -62,9 +63,10 @@ const createUser = async (req, res) => {
 
         let findAccount_Number = User.findOne({ accountNumber });
 
-        while (findAccount_Number) {
+        while (!findAccount_Number) {
             accountNumber = otpGenerator.generate(16, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
             findAccount_Number = User.findOne({ accountNumber });
+            console.log("inside loop",findAccount_Number)
         }
 
         // Upload file to Cloudinary
