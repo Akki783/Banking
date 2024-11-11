@@ -1,18 +1,23 @@
 const User = require("../model/user");
 const { cloudinary } = require("../config/cloudinary");
 
+const otpGenerator = require('otp-generator')
+
 
 const createUser = async (req, res) => {
-    const { name, email, password, phoneNumber, accountNumber, balance, accountType } = req.body;
+    const { name, email, password, phoneNumber, accountType, balance, url } = req.body;
 
     try {
         // Check if all required fields are provided
-        if (!name || !email || !password || !phoneNumber || !accountNumber || !accountType) {
+        if (!name || !email || !password || !phoneNumber || !accountType) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required!"
             });
         }
+
+
+        /*
 
         if (!req.files || !req.files.file) {
             return res.status(400).json({
@@ -21,8 +26,19 @@ const createUser = async (req, res) => {
             });
         }
 
+
+
         // Get the file from the request
         const file = req.files.file;
+        const cloudinaryResult = await cloudinary.uploader.upload(file.tempFilePath, {
+            folder: 'Banking',
+            use_filename: true,
+            unique_filename: false,
+        });
+
+        // File URL (can be stored in the user document)
+        const fileUrl = cloudinaryResult.secure_url;
+        */
 
         // Check if the email or phone number already exists
         const existingEmail = await User.findOne({ email });
@@ -42,15 +58,16 @@ const createUser = async (req, res) => {
             });
         }
 
-        // Upload file to Cloudinary
-        const cloudinaryResult = await cloudinary.uploader.upload(file.tempFilePath, {
-            folder: 'Banking',
-            use_filename: true,
-            unique_filename: false,
-        });
+        let accountNumber = otpGenerator.generate(16, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
-        // File URL (can be stored in the user document)
-        const fileUrl = cloudinaryResult.secure_url;
+        let findAccount_Number = User.findOne({ accountNumber });
+
+        while (findAccount_Number) {
+            accountNumber = otpGenerator.generate(16, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+            findAccount_Number = User.findOne({ accountNumber });
+        }
+
+        // Upload file to Cloudinary
 
 
         // Create a new user object and save it to the database
@@ -62,7 +79,7 @@ const createUser = async (req, res) => {
             accountNumber,
             balance: balance || 0, // Default balance is 0 if not provided
             accountType,
-            url: fileUrl
+            url
         });
 
         await newUser.save();

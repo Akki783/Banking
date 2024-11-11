@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
     },
     accountType: {
         type: String,
-        enum: ["Savings", "Checking", "Business"],
+        enum: ["Current account", "Savings account", "Salary account"],
         required: true,
     },
     createdAt: {
