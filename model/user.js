@@ -1,59 +1,29 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    phoneNumber: {
-        type: String,
-        required: true,
-        unique: true,
-        validate: {
-            validator: function(v) {
-                // Basic regex for a 10-digit phone number, modify as needed
-                return /^\d{10}$/.test(v);
-            },
-            message: props => `${props.value} is not a valid phone number!`
-        }
-    },
-    accountNumber: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    balance: {
-        type: Number,
-        required: true,
-        default: 0,
-    },
-    accountType: {
-        type: String,
-        enum: ["Current account", "Savings account", "Salary account"],
-        required: true,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    url:{
-        type: String,
-        required: true
-    }
+// Define the schema for a bank account
+const accountSchema = new mongoose.Schema({
+  name: { type: String, required: true }, // Account holder name
+  email: { type: String, required: true, unique: true }, // Unique email
+  password: { type: String, required: true }, // Password for account
+  phoneNumber: { type: String, required: true, unique: true }, // Unique phone number
+  accountNumber: { type: String, required: true, unique: true }, // Auto-generated account number
+  balance: { type: Number, default: 0 }, // Default balance starts at 0
+  accountType: { type: String, required: true, enum: ['Savings account', 'Current account'] }, // Account type
+  url: { type: String, required: false }, // Optional field for any URL
+  createdAt: { type: Date, default: Date.now }, // Timestamp for account creation
 });
 
-const User = mongoose.model("User", userSchema);
+// Pre-save hook to ensure a unique account number is generated
+accountSchema.pre('save', function (next) {
+  if (!this.accountNumber) {
+    // Generate a unique account number if not already set
+    const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+    this.accountNumber = `${Date.now()}${randomDigits}`;
+  }
+  next();
+});
 
-module.exports = User;
+// Create the Account model
+const Account = mongoose.model('Account', accountSchema);
+
+module.exports = Account;

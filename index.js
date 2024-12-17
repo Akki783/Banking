@@ -1,3 +1,4 @@
+/*
 require("dotenv").config();
 const express = require("express");
 const PORT = process.env.PORT || 3000;
@@ -30,3 +31,37 @@ app.post("/user", createUser);
 app.listen(PORT, () => {
     console.log(`Server running on : http://localhost:${PORT}`);
 })
+    */
+
+const express = require('express');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const bankRoutes = require('./Routes/bankRoutes');
+const errorHandler = require('./middleWare/errorHandling');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+
+// Routes
+app.use('/api/bank', bankRoutes);
+
+// Error Handling Middleware
+app.use(errorHandler);
+
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGODB_URL)
+  .then(() => {
+    console.log('MongoDB Connected');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('MongoDB connection failed:', err.message);
+  });

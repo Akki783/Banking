@@ -18,30 +18,6 @@ const createUser = async (req, res) => {
         }
 
 
-        /*
-
-        if (!req.files || !req.files.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No File was uploaded...."
-            });
-        }
-
-
-
-        // Get the file from the request
-        const file = req.files.file;
-        const cloudinaryResult = await cloudinary.uploader.upload(file.tempFilePath, {
-            folder: 'Banking',
-            use_filename: true,
-            unique_filename: false,
-        });
-
-        // File URL (can be stored in the user document)
-        const fileUrl = cloudinaryResult.secure_url;
-        */
-
-        // Check if the email or phone number already exists
         const existingEmail = await User.findOne({ email });
         const existingPhoneNumber = await User.findOne({ phoneNumber });
 
