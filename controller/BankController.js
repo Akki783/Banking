@@ -156,7 +156,7 @@ exports.createAccount = async (req, res, next) => {
 
     await account.save();
 
-    const scanUrl = `http://localhost:4000/api/bank/scan?accountId=${account._id}`; // Include unique account ID
+    const scanUrl = `https://banking-8t8y.onrender.com/api/bank/scan?accountId=${account._id}`; // Include unique account ID
 
     QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
       if (err) {
