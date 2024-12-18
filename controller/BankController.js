@@ -127,7 +127,7 @@ exports.createAccount = async (req, res, next) => {
 
     // Input validation
     if (!name || !email || !password || !phoneNumber || !accountType) {
-      return res.status(400).json({ error: "All fields are required." });
+      return res.status(400).json({success: false , error: "All fields are required." });
     }
 
     // Check if account already exists
@@ -138,6 +138,7 @@ exports.createAccount = async (req, res, next) => {
       return res
         .status(400)
         .json({
+          success: false ,
           error: "Account already exists with this email or phone number.",
         });
     }
@@ -164,7 +165,7 @@ exports.createAccount = async (req, res, next) => {
 
     QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
       if (err) {
-        return res.status(500).json({ error: "Error generating QR code." });
+        return res.status(500).json({ success: false ,error: "Error generating QR code." });
       }
 
       try {
@@ -179,6 +180,7 @@ exports.createAccount = async (req, res, next) => {
         await account.save();
 
         res.status(201).json({
+          success: true ,
           message: "Account created successfully with QR code.",
           account: {
             name: account.name,
@@ -196,7 +198,7 @@ exports.createAccount = async (req, res, next) => {
         console.error("Cloudinary Upload Error:", uploadErr);
         return res
           .status(500)
-          .json({ error: "Error uploading QR code to Cloudinary." });
+          .json({success: false , error: "Error uploading QR code to Cloudinary." });
       }
     });
   } catch (err) {
@@ -210,13 +212,13 @@ exports.handleQrScan = async (req, res, next) => {
 
     // Validate accountId
     if (!accountId) {
-      return res.status(400).json({ error: "Account ID is required." });
+      return res.status(400).json({success: false , error: "Account ID is required." });
     }
 
     // Fetch the account from the database
     const account = await Account.findById(accountId);
     if (!account) {
-      return res.status(404).json({ error: "Account not found." });
+      return res.status(404).json({success: false , error: "Account not found." });
     }
 
     // Prepare webhook payload
@@ -234,6 +236,7 @@ exports.handleQrScan = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true ,
       message: "QR code scanned successfully.",
       account: {
         name: account.name,
@@ -255,10 +258,10 @@ exports.checkBalance = async (req, res, next) => {
 
     const account = await Account.findOne({ accountNumber });
     if (!account) {
-      return res.status(404).json({ error: "Account not found" });
+      return res.status(404).json({success: false , error: "Account not found" });
     }
 
-    res.status(200).json({ balance: account });
+    res.status(200).json({ success: true ,balance: account });
   } catch (err) {
     next(err);
   }
@@ -269,11 +272,11 @@ exports.transferMoney = async (req, res, next) => {
   const { fromAccount, toAccount, amount } = req.body;
 
   if (!fromAccount || !toAccount || amount <= 0) {
-    return res.status(400).json({ error: "Invalid transfer details." });
+    return res.status(400).json({success: false , error: "Invalid transfer details." });
   }
 
   if (fromAccount === toAccount) {
-    return res.status(400).json({ error: "Both Account numbers are same..." });
+    return res.status(400).json({ success: false ,error: "Both Account numbers are same..." });
   }
 
   try {
@@ -283,11 +286,11 @@ exports.transferMoney = async (req, res, next) => {
     if (!sender || !receiver) {
       return res
         .status(404)
-        .json({ error: "Sender or receiver account not found." });
+        .json({success: false , error: "Sender or receiver account not found." });
     }
 
     if (sender.balance < amount) {
-      return res.status(400).json({ error: "Insufficient balance." });
+      return res.status(400).json({ success: false ,error: "Insufficient balance." });
     }
 
     // Perform transfer
@@ -318,6 +321,7 @@ exports.transferMoney = async (req, res, next) => {
     await creditTransaction.save();
 
     res.status(200).json({
+      success: true,
       message: "Transfer successful",
       sender: {
         accountNumber: sender.accountNumber,
@@ -341,14 +345,14 @@ exports.deposit = async (req, res, next) => {
     if (!amount || isNaN(amount) || amount <= 0) {
       return res
         .status(400)
-        .json({ error: "Invalid amount. Please provide a positive number." });
+        .json({ success: false ,error: "Invalid amount. Please provide a positive number." });
     }
 
     // Find the account by account number
     const account = await Account.findOne({ accountNumber });
 
     if (!account) {
-      return res.status(404).json({ error: "Account not found." });
+      return res.status(404).json({success: false , error: "Account not found." });
     }
 
     // Add the amount to the balance
@@ -369,6 +373,7 @@ exports.deposit = async (req, res, next) => {
     await transaction.save();
 
     res.status(200).json({
+      success: true,
       message: "Amount added successfully.",
       account: {
         accountNumber: account.accountNumber,
