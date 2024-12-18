@@ -159,7 +159,7 @@ exports.createAccount = async (req, res, next) => {
 
     await account.save();
 
-    const scanUrl = `https://banking-8t8y.onrender.com/scan?accountId=${account._id}`;
+    const scanUrl = `https://banking-8t8y.onrender.com/api/bank/scan?accountId=${account._id}`;
 
 
     QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
