@@ -1,5 +1,23 @@
-const Account = require("../model/user");
 const Transaction = require("../model/transcation");
+const Account = require("../model/user");
+const QRCode = require("qrcode");
+const cloudinary = require("cloudinary").v2;
+require("dotenv").config();
+
+const config = {
+  cloudinary: {
+    cloud_name: "dxnvzxkyf",
+    api_key: "665885989761969",
+    api_secret: "CR8kvRBdNDQpISlQkZRPK3sfp_o",
+  },
+};
+
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
 
 // Function to generate a unique account number
 const generateAccountNumber = () => {
@@ -7,7 +25,7 @@ const generateAccountNumber = () => {
   return `${Date.now()}${randomDigits}`; // e.g., 17081705631234123
 };
 
-// Create a new account with validation
+/*
 exports.createAccount = async (req, res, next) => {
   try {
     const { name, email, password, phoneNumber, accountType, url } = req.body;
@@ -17,16 +35,15 @@ exports.createAccount = async (req, res, next) => {
       return res.status(400).json({ error: "All fields are required." });
     }
 
+    // Check if account exists with same email or phone number
     const existingAccount = await Account.findOne({
       $or: [{ email }, { phoneNumber }],
     });
 
     if (existingAccount) {
-      return res
-        .status(400)
-        .json({
-          error: "Account already exists with this email and phone number.",
-        });
+      return res.status(400).json({
+        error: "Account already exists with this email or phone number.",
+      });
     }
 
     // Generate account number
@@ -44,19 +61,187 @@ exports.createAccount = async (req, res, next) => {
       url,
     });
 
+    // Generate QR Code with Account Details
+    const qrData = JSON.stringify({
+      name,
+      email,
+      phoneNumber,
+      accountNumber,
+      accountType,
+    });
+
+
+    QRCode.toDataURL(qrData, async (err, qrCodeImage) => {
+      if (err) {
+        return res.status(500).json({ error: "Error generating QR code" });
+      }
+
+      try {
+        // Upload the QR code image to Cloudinary
+        const uploadedImage = await cloudinary.uploader.upload(qrCodeImage, {
+          folder: "bank_accounts/qr_codes", // Store in a specific folder
+          public_id: accountNumber, // Use account number as image identifier
+        });
+
+
+        // Save QR code URL to the account object
+        account.qrCodeUrl = uploadedImage.secure_url; // Save QR URL in the account
+
+        // Save the account with QR code URL
+        await account.save();
+
+        res.status(201).json({
+          message: "Account created successfully with QR code",
+          account: {
+            name: account.name,
+            email: account.email,
+            phoneNumber: account.phoneNumber,
+            accountNumber: account.accountNumber,
+            balance: account.balance,
+            accountType: account.accountType,
+            url: account.url,
+            qrCodeUrl: account.qrCodeUrl, // Return the QR code URL
+            createdAt: account.createdAt,
+          },
+        });
+      } catch (uploadErr) {
+        res
+          .status(500)
+          .json({ error: "Error uploading QR code to Cloudinary" });
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+*/
+
+// Create Account API
+exports.createAccount = async (req, res, next) => {
+  try {
+    const { name, email, password, phoneNumber, accountType, url } = req.body;
+
+    // Input validation
+    if (!name || !email || !password || !phoneNumber || !accountType) {
+      return res.status(400).json({ error: "All fields are required." });
+    }
+
+    // Check if account already exists
+    const existingAccount = await Account.findOne({
+      $or: [{ email }, { phoneNumber }],
+    });
+    if (existingAccount) {
+      return res
+        .status(400)
+        .json({
+          error: "Account already exists with this email or phone number.",
+        });
+    }
+
+    // Generate account number
+    const accountNumber = generateAccountNumber();
+
+    // Create a new account instance
+    const account = new Account({
+      name,
+      email,
+      password,
+      phoneNumber,
+      accountNumber,
+      balance: 0,
+      accountType,
+      url,
+    });
+
     await account.save();
 
-    res.status(201).json({
-      message: "Account created successfully",
+    const scanUrl = `http://localhost:4000/api/bank/scan?accountId=${account._id}`; // Include unique account ID
+
+    QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
+      if (err) {
+        return res.status(500).json({ error: "Error generating QR code." });
+      }
+
+      try {
+        // Upload QR code to Cloudinary
+        const uploadedImage = await cloudinary.uploader.upload(qrCodeImage, {
+          folder: "bank_accounts/qr_codes",
+          public_id: account.accountNumber,
+        });
+
+        // Save QR code URL to the account
+        account.qrCodeUrl = uploadedImage.secure_url;
+        await account.save();
+
+        res.status(201).json({
+          message: "Account created successfully with QR code.",
+          account: {
+            name: account.name,
+            email: account.email,
+            phoneNumber: account.phoneNumber,
+            accountNumber: account.accountNumber,
+            balance: account.balance,
+            accountType: account.accountType,
+            url: account.url,
+            qrCodeUrl: account.qrCodeUrl,
+            createdAt: account.createdAt,
+          },
+        });
+      } catch (uploadErr) {
+        console.error("Cloudinary Upload Error:", uploadErr);
+        return res
+          .status(500)
+          .json({ error: "Error uploading QR code to Cloudinary." });
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.handleQrScan = async (req, res, next) => {
+  try {
+    const { accountId } = req.query;
+
+    // Validate accountId
+    if (!accountId) {
+      return res.status(400).json({ error: "Account ID is required." });
+    }
+
+    // Fetch the account from the database
+    const account = await Account.findById(accountId);
+    if (!account) {
+      return res.status(404).json({ error: "Account not found." });
+    }
+
+    // Prepare webhook payload
+    const webhookData = {
+      name: account.name,
+      email: account.email,
+      phoneNumber: account.phoneNumber,
+      accountNumber: account.accountNumber,
+      accountType: account.accountType,
+      balance: account.balance,
+      scannedAt: new Date(),
+    };
+
+    // Trigger the webhook
+    await axios.post(
+      "https://webhook.site/d1ba59e8-89bc-4276-bc11-788cbf284645", // Your webhook URL
+      webhookData
+    );
+
+    res.status(200).json({
+      message: "QR code scanned successfully.",
       account: {
         name: account.name,
         email: account.email,
         phoneNumber: account.phoneNumber,
         accountNumber: account.accountNumber,
-        balance: account.balance,
         accountType: account.accountType,
-        url: account.url,
-        createdAt: account.createdAt,
+        balance: account.balance,
+        scannedAt: new Date(),
       },
     });
   } catch (err) {
@@ -155,7 +340,9 @@ exports.deposit = async (req, res, next) => {
     const { accountNumber, amount } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount. Please provide a positive number." });
+      return res
+        .status(400)
+        .json({ error: "Invalid amount. Please provide a positive number." });
     }
 
     // Find the account by account number

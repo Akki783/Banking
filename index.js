@@ -38,6 +38,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bankRoutes = require('./Routes/bankRoutes');
 const errorHandler = require('./middleWare/errorHandling');
+const Account = require("./model/user");
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/bank', bankRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
+
 
 // Connect to MongoDB
 mongoose
