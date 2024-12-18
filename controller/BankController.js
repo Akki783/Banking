@@ -239,10 +239,7 @@ exports.handleQrScan = async (req, res, next) => {
         name: account.name,
         email: account.email,
         phoneNumber: account.phoneNumber,
-        accountNumber: account.accountNumber,
-        accountType: account.accountType,
-        balance: account.balance,
-        scannedAt: new Date(),
+        accountNumber: account.accountNumber
       },
     });
   } catch (err) {
