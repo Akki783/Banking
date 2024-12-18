@@ -267,6 +267,7 @@ exports.checkBalance = async (req, res, next) => {
   }
 };
 
+/*
 // Transfer money (with transaction logging)
 exports.transferMoney = async (req, res, next) => {
   const { fromAccount, toAccount, amount } = req.body;
@@ -336,6 +337,78 @@ exports.transferMoney = async (req, res, next) => {
     next(err);
   }
 };
+*/
+
+exports.transferMoney = async (req, res, next) => {
+  const { fromAccount, toAccount, amount } = req.body;
+
+  if (!fromAccount || !toAccount || amount <= 0) {
+    return res.status(400).json({ success: false, error: "Invalid transfer details." });
+  }
+
+  if (fromAccount === toAccount) {
+    return res.status(400).json({ success: false, error: "Both Account numbers are same..." });
+  }
+
+  try {
+    const sender = await Account.findOne({ accountNumber: fromAccount });
+    const receiver = await Account.findOne({ accountNumber: toAccount });
+
+    if (!sender || !receiver) {
+      return res.status(404).json({ success: false, error: "Sender or receiver account not found." });
+    }
+
+    // Ensure balances are numbers
+    sender.balance = Number(sender.balance);
+    receiver.balance = Number(receiver.balance);
+
+    if (sender.balance < amount) {
+      return res.status(400).json({ success: false, error: "Insufficient balance." });
+    }
+
+    // Perform transfer
+    sender.balance -= amount;
+    receiver.balance += amount;
+
+    await sender.save();
+    await receiver.save();
+
+    // Log the debit and credit transactions
+    const debitTransaction = new Transaction({
+      fromAccount,
+      toAccount,
+      amount,
+      transactionType: "Debit", // Debit for the sender
+    });
+
+    const creditTransaction = new Transaction({
+      fromAccount: toAccount,
+      toAccount: fromAccount,
+      amount,
+      transactionType: "Credit", // Credit for the receiver
+    });
+
+    // Save both transactions
+    await debitTransaction.save();
+    await creditTransaction.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Transfer successful",
+      sender: {
+        accountNumber: sender.accountNumber,
+        balance: sender.balance,
+      },
+      receiver: {
+        accountNumber: receiver.accountNumber,
+        balance: receiver.balance,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 // Add amount to an existing account (deposit with transaction logging)
 exports.deposit = async (req, res, next) => {
