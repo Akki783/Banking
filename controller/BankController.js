@@ -1,8 +1,11 @@
+require("dotenv").config();
 const Transaction = require("../model/transcation");
 const Account = require("../model/user");
 const QRCode = require("qrcode");
 const cloudinary = require("cloudinary").v2;
-require("dotenv").config();
+const axios = require("axios");
+const baseUrl = process.env.BASE_URL || "http://localhost:4000";
+
 
 const config = {
   cloudinary: {
@@ -156,7 +159,8 @@ exports.createAccount = async (req, res, next) => {
 
     await account.save();
 
-    const scanUrl = `https://banking-8t8y.onrender.com/api/bank/scan?accountId=${account._id}`; // Include unique account ID
+    const scanUrl = `${baseUrl}/scan?accountId=${account._id}`;
+
 
     QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
       if (err) {
@@ -220,10 +224,7 @@ exports.handleQrScan = async (req, res, next) => {
       name: account.name,
       email: account.email,
       phoneNumber: account.phoneNumber,
-      accountNumber: account.accountNumber,
-      accountType: account.accountType,
-      balance: account.balance,
-      scannedAt: new Date(),
+      accountNumber: account.accountNumber
     };
 
     // Trigger the webhook
@@ -245,6 +246,7 @@ exports.handleQrScan = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.log(err)
     next(err);
   }
 };
