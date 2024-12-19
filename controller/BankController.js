@@ -4,14 +4,15 @@ const Account = require("../model/user");
 const QRCode = require("qrcode");
 const cloudinary = require("cloudinary").v2;
 const axios = require("axios");
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
-
 
 const config = {
   cloudinary: {
-    cloud_name: "dxnvzxkyf",
-    api_key: "665885989761969",
-    api_secret: "CR8kvRBdNDQpISlQkZRPK3sfp_o",
+    cloud_name: process.env.CLOUD_NAME || "dxnvzxkyf",
+    api_key: process.env.API_KEY || "665885989761969",
+    api_secret: process.env.API_SECRET || "CR8kvRBdNDQpISlQkZRPK3sfp_o",
   },
 };
 
@@ -28,98 +29,6 @@ const generateAccountNumber = () => {
   return `${Date.now()}${randomDigits}`; // e.g., 17081705631234123
 };
 
-/*
-exports.createAccount = async (req, res, next) => {
-  try {
-    const { name, email, password, phoneNumber, accountType, url } = req.body;
-
-    // Input Validation
-    if (!name || !email || !password || !phoneNumber || !accountType) {
-      return res.status(400).json({ error: "All fields are required." });
-    }
-
-    // Check if account exists with same email or phone number
-    const existingAccount = await Account.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
-
-    if (existingAccount) {
-      return res.status(400).json({
-        error: "Account already exists with this email or phone number.",
-      });
-    }
-
-    // Generate account number
-    const accountNumber = generateAccountNumber();
-
-    // Create a new account
-    const account = new Account({
-      name,
-      email,
-      password,
-      phoneNumber,
-      accountNumber,
-      balance: 0,
-      accountType,
-      url,
-    });
-
-    // Generate QR Code with Account Details
-    const qrData = JSON.stringify({
-      name,
-      email,
-      phoneNumber,
-      accountNumber,
-      accountType,
-    });
-
-
-    QRCode.toDataURL(qrData, async (err, qrCodeImage) => {
-      if (err) {
-        return res.status(500).json({ error: "Error generating QR code" });
-      }
-
-      try {
-        // Upload the QR code image to Cloudinary
-        const uploadedImage = await cloudinary.uploader.upload(qrCodeImage, {
-          folder: "bank_accounts/qr_codes", // Store in a specific folder
-          public_id: accountNumber, // Use account number as image identifier
-        });
-
-
-        // Save QR code URL to the account object
-        account.qrCodeUrl = uploadedImage.secure_url; // Save QR URL in the account
-
-        // Save the account with QR code URL
-        await account.save();
-
-        res.status(201).json({
-          message: "Account created successfully with QR code",
-          account: {
-            name: account.name,
-            email: account.email,
-            phoneNumber: account.phoneNumber,
-            accountNumber: account.accountNumber,
-            balance: account.balance,
-            accountType: account.accountType,
-            url: account.url,
-            qrCodeUrl: account.qrCodeUrl, // Return the QR code URL
-            createdAt: account.createdAt,
-          },
-        });
-      } catch (uploadErr) {
-        res
-          .status(500)
-          .json({ error: "Error uploading QR code to Cloudinary" });
-      }
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-*/
-
 // Create Account API
 exports.createAccount = async (req, res, next) => {
   try {
@@ -127,7 +36,9 @@ exports.createAccount = async (req, res, next) => {
 
     // Input validation
     if (!name || !email || !password || !phoneNumber || !accountType) {
-      return res.status(400).json({success: false , error: "All fields are required." });
+      return res
+        .status(400)
+        .json({ success: false, error: "All fields are required." });
     }
 
     // Check if account already exists
@@ -135,12 +46,10 @@ exports.createAccount = async (req, res, next) => {
       $or: [{ email }, { phoneNumber }],
     });
     if (existingAccount) {
-      return res
-        .status(400)
-        .json({
-          success: false ,
-          error: "Account already exists with this email or phone number.",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Account already exists with this email or phone number.",
+      });
     }
 
     // Generate account number
@@ -162,10 +71,11 @@ exports.createAccount = async (req, res, next) => {
 
     const scanUrl = `https://banking-8t8y.onrender.com/api/bank/scan?accountId=${account._id}`;
 
-
     QRCode.toDataURL(scanUrl, async (err, qrCodeImage) => {
       if (err) {
-        return res.status(500).json({ success: false ,error: "Error generating QR code." });
+        return res
+          .status(500)
+          .json({ success: false, error: "Error generating QR code." });
       }
 
       try {
@@ -179,8 +89,22 @@ exports.createAccount = async (req, res, next) => {
         account.qrCodeUrl = uploadedImage.secure_url;
         await account.save();
 
+        // Generate a JWT token
+        const token = jwt.sign(
+          {
+            id: user._id,
+            accountNumber: user.accountNumber,
+            email: user.email,
+            name: user.name,
+            issuedAt: Math.floor(Date.now() / 1000), // Current time in seconds
+            expiresAt: Math.floor(Date.now() / 1000) + TOKEN_EXPIRY, // Expiry time in seconds
+          },
+          JWT_SECRET,
+          { expiresIn: TOKEN_EXPIRY }
+        );
+
         res.status(201).json({
-          success: true ,
+          success: true,
           message: "Account created successfully with QR code.",
           account: {
             name: account.name,
@@ -192,13 +116,15 @@ exports.createAccount = async (req, res, next) => {
             url: account.url,
             qrCodeUrl: account.qrCodeUrl,
             createdAt: account.createdAt,
+            token,
           },
         });
       } catch (uploadErr) {
         console.error("Cloudinary Upload Error:", uploadErr);
-        return res
-          .status(500)
-          .json({success: false , error: "Error uploading QR code to Cloudinary." });
+        return res.status(500).json({
+          success: false,
+          error: "Error uploading QR code to Cloudinary.",
+        });
       }
     });
   } catch (err) {
@@ -212,13 +138,17 @@ exports.handleQrScan = async (req, res, next) => {
 
     // Validate accountId
     if (!accountId) {
-      return res.status(400).json({success: false , error: "Account ID is required." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Account ID is required." });
     }
 
     // Fetch the account from the database
     const account = await Account.findById(accountId);
     if (!account) {
-      return res.status(404).json({success: false , error: "Account not found." });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found." });
     }
 
     // Prepare webhook payload
@@ -226,7 +156,7 @@ exports.handleQrScan = async (req, res, next) => {
       name: account.name,
       email: account.email,
       phoneNumber: account.phoneNumber,
-      accountNumber: account.accountNumber
+      accountNumber: account.accountNumber,
     };
 
     // Trigger the webhook
@@ -236,17 +166,17 @@ exports.handleQrScan = async (req, res, next) => {
     );
 
     res.status(200).json({
-      success: true ,
+      success: true,
       message: "QR code scanned successfully.",
       account: {
         name: account.name,
         email: account.email,
         phoneNumber: account.phoneNumber,
-        accountNumber: account.accountNumber
+        accountNumber: account.accountNumber,
       },
     });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     next(err);
   }
 };
@@ -254,100 +184,39 @@ exports.handleQrScan = async (req, res, next) => {
 // Check account balance
 exports.checkBalance = async (req, res, next) => {
   try {
-    const { accountNumber } = req.body;
+    // const { accountNumber } = req.body;
+
+    const accountNumber = req.accountNumber;
 
     const account = await Account.findOne({ accountNumber });
     if (!account) {
-      return res.status(404).json({success: false , error: "Account not found" });
-    }
-
-    res.status(200).json({ success: true ,balance: account });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/*
-// Transfer money (with transaction logging)
-exports.transferMoney = async (req, res, next) => {
-  const { fromAccount, toAccount, amount } = req.body;
-
-  if (!fromAccount || !toAccount || amount <= 0) {
-    return res.status(400).json({success: false , error: "Invalid transfer details." });
-  }
-
-  if (fromAccount === toAccount) {
-    return res.status(400).json({ success: false ,error: "Both Account numbers are same..." });
-  }
-
-  try {
-    const sender = await Account.findOne({ accountNumber: fromAccount });
-    const receiver = await Account.findOne({ accountNumber: toAccount });
-
-    if (!sender || !receiver) {
       return res
         .status(404)
-        .json({success: false , error: "Sender or receiver account not found." });
+        .json({ success: false, error: "Account not found" });
     }
 
-    if (sender.balance < amount) {
-      return res.status(400).json({ success: false ,error: "Insufficient balance." });
-    }
-
-    // Perform transfer
-    sender.balance -= amount;
-    receiver.balance += amount;
-
-    await sender.save();
-    await receiver.save();
-
-    // Log the debit transaction for the sender
-    const debitTransaction = new Transaction({
-      fromAccount,
-      toAccount,
-      amount,
-      transactionType: "Debit", // Debit for the sender
-    });
-
-    // Log the credit transaction for the receiver
-    const creditTransaction = new Transaction({
-      fromAccount: toAccount,
-      toAccount: fromAccount,
-      amount,
-      transactionType: "Credit", // Credit for the receiver
-    });
-
-    // Save both transactions
-    await debitTransaction.save();
-    await creditTransaction.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Transfer successful",
-      sender: {
-        accountNumber: sender.accountNumber,
-        balance: sender.balance,
-      },
-      receiver: {
-        accountNumber: receiver.accountNumber,
-        balance: receiver.balance,
-      },
-    });
+    res.status(200).json({ success: true, balance: account });
   } catch (err) {
     next(err);
   }
 };
-*/
+
 
 exports.transferMoney = async (req, res, next) => {
-  const { fromAccount, toAccount, amount } = req.body;
+  const { toAccount, amount } = req.body;
 
-  if (!fromAccount || !toAccount || amount <= 0) {
-    return res.status(400).json({ success: false, error: "Invalid transfer details." });
+  const fromAccount = accountNumber;
+
+  if (!toAccount || amount <= 0) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid transfer details." });
   }
 
   if (fromAccount === toAccount) {
-    return res.status(400).json({ success: false, error: "Both Account numbers are same..." });
+    return res
+      .status(400)
+      .json({ success: false, error: "Both Account numbers are same..." });
   }
 
   try {
@@ -355,7 +224,10 @@ exports.transferMoney = async (req, res, next) => {
     const receiver = await Account.findOne({ accountNumber: toAccount });
 
     if (!sender || !receiver) {
-      return res.status(404).json({ success: false, error: "Sender or receiver account not found." });
+      return res.status(404).json({
+        success: false,
+        error: "Sender or receiver account not found.",
+      });
     }
 
     // Ensure balances are numbers
@@ -363,7 +235,9 @@ exports.transferMoney = async (req, res, next) => {
     receiver.balance = Number(receiver.balance);
 
     if (sender.balance < amount) {
-      return res.status(400).json({ success: false, error: "Insufficient balance." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Insufficient balance." });
     }
 
     // Perform transfer
@@ -409,23 +283,25 @@ exports.transferMoney = async (req, res, next) => {
   }
 };
 
-
 // Add amount to an existing account (deposit with transaction logging)
 exports.deposit = async (req, res, next) => {
   try {
     const { accountNumber, amount } = req.body;
 
     if (!amount || isNaN(amount) || amount <= 0) {
-      return res
-        .status(400)
-        .json({ success: false ,error: "Invalid amount. Please provide a positive number." });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid amount. Please provide a positive number.",
+      });
     }
 
     // Find the account by account number
     const account = await Account.findOne({ accountNumber });
 
     if (!account) {
-      return res.status(404).json({success: false , error: "Account not found." });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found." });
     }
 
     // Add the amount to the balance
