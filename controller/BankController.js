@@ -183,7 +183,6 @@ exports.handleQrScan = async (req, res, next) => {
         phoneNumber: account.phoneNumber,
         accountNumber: account.accountNumber,
       },
-      webhookResponse
     });
   } catch (err) {
     // Log the error
