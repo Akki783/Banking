@@ -212,7 +212,9 @@ exports.checkBalance = async (req, res, next) => {
 exports.transferMoney = async (req, res, next) => {
   const { toAccount, amount } = req.body;
 
-  const fromAccount = accountNumber;
+  const fromAccount = req.user.accountNumber;
+
+  // console.log(fromAccount)
 
   if (!toAccount || amount <= 0) {
     return res
