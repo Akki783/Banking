@@ -152,27 +152,6 @@ exports.handleQrScan = async (req, res, next) => {
         .json({ success: false, error: "Account not found." });
     }
 
-    // Prepare webhook payload
-    const webhookData = {
-      name: account.name,
-      email: account.email,
-      phoneNumber: account.phoneNumber,
-      accountNumber: account.accountNumber,
-    };
-
-    // Log the data being sent to the webhook
-    console.log("Sending data to webhook:", webhookData);
-
-    const webhookUrl = "https://webhook.site/100e7448-27f4-47fc-9a96-7b479ac319ec";
-
-    const webhookResponse = await axios.post(webhookUrl, webhookData, {
-      headers: { "Content-Type": "application/json" },
-    });
-
-    // Log the response from the webhook
-    console.log("Webhook response status:", webhookResponse.status);
-    console.log("Webhook response data:", webhookResponse.data);
-
     // Redirect user to WhatsApp
     const whatsappNumber = "+918655741286";
     const whatsappMessage = encodeURIComponent(
