@@ -173,6 +173,15 @@ exports.handleQrScan = async (req, res, next) => {
     console.log("Webhook response status:", webhookResponse.status);
     console.log("Webhook response data:", webhookResponse.data);
 
+    // Redirect user to WhatsApp
+    const whatsappNumber = "+918655741286";
+    const whatsappMessage = encodeURIComponent(
+      `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
+    );
+    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+
+    return res.redirect(whatsappRedirectUrl);
+
     // Respond with success
     res.status(200).json({
       success: true,
