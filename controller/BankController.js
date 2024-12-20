@@ -163,7 +163,7 @@ exports.handleQrScan = async (req, res, next) => {
     // Log the data being sent to the webhook
     console.log("Sending data to webhook:", webhookData);
 
-    const webhookUrl = "https://webhook.site/100e7448-27f4-47fc-9a96-7b479ac319ec";
+    const webhookUrl = "https://omni.dovesoft.app/api/iwh/615e6d9470f56290c6085eaaaf62f8c5";
 
     const webhookResponse = await axios.post(webhookUrl, webhookData, {
       headers: { "Content-Type": "application/json" },
