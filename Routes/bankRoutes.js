@@ -25,7 +25,7 @@ router.post("/accounts", createAccount);
 router.get("/accounts/balance", authenticateToken, checkBalance);
 router.post("/accounts/transfer", authenticateToken, transferMoney);
 router.post("/accounts/deposit", deposit); 
-router.get("/scan/:accountId", handleQrScan);
+router.get("/scan:accountId", handleQrScan);
 router.get("/transcationHistory", authenticateToken, getUserTransactions);
 router.get("/getUserTransactionsForMessage", getUserTransactionsForMessage);
 
