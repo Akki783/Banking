@@ -86,16 +86,16 @@ exports.createAccount = async (req, res, next) => {
         });
 
         // Save QR code URL to the account
-        account.qrCodeUrl = uploadedImage.secure_url;
+        account.url = uploadedImage.secure_url; // Ensure the field is 'url' and consistent
         await account.save();
 
         // Generate a JWT token
         const token = jwt.sign(
           {
-            id: user._id,
-            accountNumber: user.accountNumber,
-            email: user.email,
-            name: user.name,
+            id: account._id, // Use the account object
+            accountNumber: account.accountNumber, // Use the account object
+            email: account.email, // Use the account object
+            name: account.name, // Use the account object
             issuedAt: Math.floor(Date.now() / 1000), // Current time in seconds
             expiresAt: Math.floor(Date.now() / 1000) + TOKEN_EXPIRY, // Expiry time in seconds
           },
@@ -114,7 +114,7 @@ exports.createAccount = async (req, res, next) => {
             balance: account.balance,
             accountType: account.accountType,
             url: account.url,
-            qrCodeUrl: account.qrCodeUrl,
+            qrCodeUrl: uploadedImage.secure_url, // Send the URL of the QR code
             createdAt: account.createdAt,
             token,
           },
@@ -132,9 +132,10 @@ exports.createAccount = async (req, res, next) => {
   }
 };
 
+// Handle QR Scan API
 exports.handleQrScan = async (req, res, next) => {
   try {
-    const { accountId } = req.query;
+    const { accountId } = req.params;
 
     // Validate accountId
     if (!accountId) {
@@ -159,12 +160,20 @@ exports.handleQrScan = async (req, res, next) => {
       accountNumber: account.accountNumber,
     };
 
-    // Trigger the webhook
-    await axios.post(
-      "https://webhook.site/d1ba59e8-89bc-4276-bc11-788cbf284645", // Your webhook URL
-      webhookData
-    );
+    // Log the data being sent to the webhook
+    console.log("Sending data to webhook:", webhookData);
 
+    const webhookUrl = "https://webhook.site/100e7448-27f4-47fc-9a96-7b479ac319ec";
+
+    const webhookResponse = await axios.post(webhookUrl, webhookData, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    // Log the response from the webhook
+    console.log("Webhook response status:", webhookResponse.status);
+    console.log("Webhook response data:", webhookResponse.data);
+
+    // Respond with success
     res.status(200).json({
       success: true,
       message: "QR code scanned successfully.",
@@ -174,19 +183,22 @@ exports.handleQrScan = async (req, res, next) => {
         phoneNumber: account.phoneNumber,
         accountNumber: account.accountNumber,
       },
+      webhookResponse
     });
   } catch (err) {
-    console.log(err);
+    // Log the error
+    console.error("Error during QR scan:", err);
     next(err);
   }
 };
+
 
 // Check account balance
 exports.checkBalance = async (req, res, next) => {
   try {
     // const { accountNumber } = req.body;
 
-    const accountNumber = req.accountNumber;
+    const accountNumber = req.user.accountNumber;
 
     const account = await Account.findOne({ accountNumber });
     if (!account) {
@@ -331,5 +343,60 @@ exports.deposit = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+exports.fetchDetailsFromPhoneNumber = async (req, res) => {
+  const { phoneNumber } = req.params;
+
+  try {
+    const account = await Account.findOne({ phoneNumber });
+
+    if (!account) {
+      return res.status(404).json({ success: false, error: "Account not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: account, // Send the entire account details
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
+
+
+exports.qrCode = async (req, res) => {
+  const accountNumber = req.user.accountNumber;
+
+  try {
+    console.log(accountNumber);
+    if (!accountNumber) {
+      return res.status(404).json({ success: false, error: "Account Number undefined" });
+    }
+
+    // Fetch the account from the correct model
+    const account = await Account.findOne({ accountNumber });
+    console.log(account);
+
+    
+
+    if (!account) {
+      return res.status(404).json({ success: false, error: "Account not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { url: account.url },
+    });
+  } catch (err) {
+    console.error(err); // Log the error for debugging
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
   }
 };

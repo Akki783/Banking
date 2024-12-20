@@ -6,6 +6,8 @@ const {
   transferMoney,
   deposit,
   handleQrScan,
+  fetchDetailsFromPhoneNumber,
+  qrCode,
 } = require("../controller/BankController");
 
 const { login } = require("../controller/login");
@@ -20,11 +22,14 @@ const { authenticateToken } = require("../middleWare/auth");
 router.post("/login", login);
 
 router.post("/accounts", createAccount);
-router.get("/accounts/balance",authenticateToken, checkBalance);
-router.post("/accounts/transfer",authenticateToken, transferMoney);
-router.post("/accounts/deposit", deposit);
+router.get("/accounts/balance", authenticateToken, checkBalance);
+router.post("/accounts/transfer", authenticateToken, transferMoney);
+router.post("/accounts/deposit", deposit); 
 router.get("/scan", handleQrScan);
-router.get("/transcationHistory",authenticateToken, getUserTransactions);
+router.get("/transcationHistory", authenticateToken, getUserTransactions);
 router.get("/getUserTransactionsForMessage", getUserTransactionsForMessage);
+
+router.get("/accounts/userDetails", fetchDetailsFromPhoneNumber);
+router.get("/accounts/qrCode", authenticateToken, qrCode);
 
 module.exports = router; // Export the router

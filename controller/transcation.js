@@ -6,7 +6,8 @@ const Account = require("../model/user");
 // Fetch transaction history for a specific account
 exports.getUserTransactions = async (req, res, next) => {
   try {
-    const { accountNumber } = req.params;
+    // const { accountNumber } = req.params;
+    const accountNumber = req.user.accountNumber;
 
     // Fetch all transactions where the account is either the from or to account
     const transactions = await Transaction.find({
