@@ -157,21 +157,9 @@ exports.handleQrScan = async (req, res, next) => {
     const whatsappMessage = encodeURIComponent(
       `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
     );
-    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}`;
 
     return res.redirect(whatsappRedirectUrl);
-
-    // Respond with success
-    res.status(200).json({
-      success: true,
-      message: "QR code scanned successfully.",
-      account: {
-        name: account.name,
-        email: account.email,
-        phoneNumber: account.phoneNumber,
-        accountNumber: account.accountNumber,
-      },
-    });
   } catch (err) {
     // Log the error
     console.error("Error during QR scan:", err);
