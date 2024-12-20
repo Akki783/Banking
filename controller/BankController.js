@@ -169,7 +169,6 @@ exports.handleQrScan = async (req, res, next) => {
       headers: { "Content-Type": "application/json" },
     });
 
-    // Log the response from the webhook
     console.log("Webhook response status:", webhookResponse.status);
     console.log("Webhook response data:", webhookResponse.data);
 
