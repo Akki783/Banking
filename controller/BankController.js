@@ -135,7 +135,7 @@ exports.createAccount = async (req, res, next) => {
 // Handle QR Scan API
 exports.handleQrScan = async (req, res, next) => {
   try {
-    const { accountId } = req.params;
+    const accountId = req.params.accountId || req.query.accountId;
 
     // Validate accountId
     if (!accountId) {
