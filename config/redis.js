@@ -7,8 +7,13 @@ async function connectToRedis() {
   try {
     // Create Redis client with the connection string
     redisClient = redis.createClient({
-      url: "rediss://red-ctkf8bogph6c739d179g:k1sxy5dHwIg9LgpUKRQ5gfJlAVoLZCXx@oregon-redis.render.com:6379",
-    });
+        url: process.env.REDIS,  // Redis URL with the rediss:// protocol
+        socket: {
+          tls: true,  // This ensures the connection uses TLS (SSL)
+          rejectUnauthorized: false,  // In production, you should validate certificates (set to true), but false works in some cases with self-signed certificates
+        },
+      });
+      
 
     redisClient.on("connect", () => {
       console.log("✅ Connected to Redis");
