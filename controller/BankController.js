@@ -394,7 +394,6 @@ exports.qrCode = async (req, res) => {
   }
 };
 
-
 exports.processUserInteraction = async (req, res) => {
   try {
     const { token } = req.body;

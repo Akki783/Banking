@@ -7,7 +7,7 @@ async function connectToRedis() {
   try {
     // Create Redis client with the connection string
     redisClient = redis.createClient({
-      url: process.env.REDIS,
+      url: "rediss://red-ctkf8bogph6c739d179g:k1sxy5dHwIg9LgpUKRQ5gfJlAVoLZCXx@oregon-redis.render.com:6379",
     });
 
     redisClient.on("connect", () => {
