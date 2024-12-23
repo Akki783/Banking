@@ -62,7 +62,6 @@ mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
     console.log('MongoDB Connected');
-    redisClient();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
