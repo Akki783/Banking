@@ -135,29 +135,75 @@ exports.createAccount = async (req, res, next) => {
 };
 
 // Handle QR Scan API
+// exports.handleQrScan = async (req, res, next) => {
+//   try {
+//     const accountId = req.params.accountId || req.query.accountId;
+
+//     // Validate accountId
+//     if (!accountId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, error: "Account ID is required." });
+//     }
+
+//     // Fetch the account from the database
+//     const account = await Account.findById(accountId);
+//     if (!account) {
+//       return res
+//         .status(404)
+//         .json({ success: false, error: "Account not found." });
+//     }
+
+//     // Generate a unique token
+//     const uniqueToken = crypto.randomUUID();
+
+//     // Store user data in Redis with an expiry (e.g., 5 minutes)
+//     const userData = JSON.stringify({
+//       accountId: account._id,
+//       name: account.name,
+//       email: account.email,
+//       phoneNumber: account.phoneNumber,
+//     });
+
+//     await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
+
+//     // Redirect user to WhatsApp
+//     const whatsappNumber = "+918655741286";
+//     const whatsappMessage = encodeURIComponent(
+//       `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
+//     );
+//     const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}`;
+
+//     return res.redirect(whatsappRedirectUrl);
+//   } catch (err) {
+//     // Log the error
+//     console.error("Error during QR scan:", err);
+//     next(err);
+//   }
+// };
+
 exports.handleQrScan = async (req, res, next) => {
   try {
     const accountId = req.params.accountId || req.query.accountId;
 
     // Validate accountId
     if (!accountId) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Account ID is required." });
+      return res.status(400).json({ success: false, error: "Account ID is required." });
     }
 
     // Fetch the account from the database
     const account = await Account.findById(accountId);
     if (!account) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Account not found." });
+      return res.status(404).json({ success: false, error: "Account not found." });
     }
 
     // Generate a unique token
     const uniqueToken = crypto.randomUUID();
 
-    // Store user data in Redis with an expiry (e.g., 5 minutes)
+    // Create a reference ID (could be a hash or just a shortened version of the token)
+    const referenceId = crypto.createHash('sha256').update(uniqueToken).digest('hex').substring(0, 10); // Example: first 10 chars of SHA256 hash
+
+    // Store user data in Redis with the reference ID as the key
     const userData = JSON.stringify({
       accountId: account._id,
       name: account.name,
@@ -165,14 +211,14 @@ exports.handleQrScan = async (req, res, next) => {
       phoneNumber: account.phoneNumber,
     });
 
-    await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
+    await redisClient.setEx(referenceId, 300, userData); // 300 seconds (5 minutes)
 
-    // Redirect user to WhatsApp
+    // Redirect user to WhatsApp with the reference ID, not the token
     const whatsappNumber = "+918655741286";
     const whatsappMessage = encodeURIComponent(
-      `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
+      `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code. Use this reference ID: ${referenceId}`
     );
-    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}`;
+    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
     return res.redirect(whatsappRedirectUrl);
   } catch (err) {
@@ -394,6 +440,7 @@ exports.qrCode = async (req, res) => {
   }
 };
 
+/*
 exports.processUserInteraction = async (req, res) => {
   try {
     const { token } = req.body;
@@ -402,6 +449,29 @@ exports.processUserInteraction = async (req, res) => {
     const userData = await redisClient.get(token);
     if (!userData) {
       return res.status(400).json({ success: false, error: "Invalid or expired token." });
+    }
+
+    // Parse the retrieved data
+    const parsedData = JSON.parse(userData);
+
+    console.log("User Data:", parsedData);
+
+    res.json({ success: true, data: parsedData });
+  } catch (err) {
+    console.error("Error processing interaction:", err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+*/
+
+exports.processUserInteraction = async (req, res) => {
+  try {
+    const { referenceId } = req.body;
+
+    // Fetch data from Redis using the reference ID (not the token)
+    const userData = await redisClient.get(referenceId);
+    if (!userData) {
+      return res.status(400).json({ success: false, error: "Invalid or expired reference ID." });
     }
 
     // Parse the retrieved data

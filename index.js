@@ -33,14 +33,13 @@ app.listen(PORT, () => {
 })
     */
 
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const bankRoutes = require('./Routes/bankRoutes');
-const errorHandler = require('./middleWare/errorHandling');
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const bankRoutes = require("./Routes/bankRoutes");
+const errorHandler = require("./middleWare/errorHandling");
 const Account = require("./model/user");
-const redisClient = require("./config/redis");
-
+const RedisClient = require("./config/redis");
 
 dotenv.config();
 
@@ -51,21 +50,21 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // Routes
-app.use('/api/bank', bankRoutes);
+app.use("/api/bank", bankRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
-
 
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
-    console.log('MongoDB Connected');
+    console.log("MongoDB Connected");
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('MongoDB connection failed:', err.message);
+    console.error("MongoDB connection failed:", err.message);
   });
