@@ -7,11 +7,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
-const redis = require("redis");
-const redisClient = redis.createClient();
 
-redisClient.on("connect", () => console.log("Connected to Redis"));
-redisClient.on("error", (err) => console.error("Redis Error:", err));
 
 const config = {
   cloudinary: {

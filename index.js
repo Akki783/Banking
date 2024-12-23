@@ -39,6 +39,8 @@ const dotenv = require('dotenv');
 const bankRoutes = require('./Routes/bankRoutes');
 const errorHandler = require('./middleWare/errorHandling');
 const Account = require("./model/user");
+const redisClient = require("./config/redis");
+
 
 dotenv.config();
 
@@ -60,6 +62,7 @@ mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
     console.log('MongoDB Connected');
+    redisClient();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
