@@ -8,6 +8,7 @@ const {
   handleQrScan,
   fetchDetailsFromPhoneNumber,
   qrCode,
+  processUserInteraction
 } = require("../controller/BankController");
 
 const { login } = require("../controller/login");
@@ -33,5 +34,7 @@ router.get("/getUserTransactionsForMessage", getUserTransactionsForMessage);
 
 router.get("/accounts/userDetails", fetchDetailsFromPhoneNumber);
 router.get("/accounts/qrCode", authenticateToken, qrCode);
+
+router.get("/getAccountData", processUserInteraction);
 
 module.exports = router; // Export the router

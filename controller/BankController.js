@@ -7,6 +7,11 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
+const redis = require("redis");
+const redisClient = redis.createClient();
+
+redisClient.on("connect", () => console.log("Connected to Redis"));
+redisClient.on("error", (err) => console.error("Redis Error:", err));
 
 const config = {
   cloudinary: {
@@ -152,18 +157,18 @@ exports.handleQrScan = async (req, res, next) => {
         .json({ success: false, error: "Account not found." });
     }
 
-    // Prepare webhook payload
-    const webhookData = {
+    // Generate a unique token
+    const uniqueToken = crypto.randomUUID();
+
+    // Store user data in Redis with an expiry (e.g., 5 minutes)
+    const userData = JSON.stringify({
+      accountId: account._id,
       name: account.name,
       email: account.email,
       phoneNumber: account.phoneNumber,
-      accountNumber: account.accountNumber,
-    };
+    });
 
-    // Log the data being sent to the webhook
-    console.log("Sending data to webhook:", webhookData);
-
-    const webhookUrl = "https://omni.dovesoft.app/api/iwh/615e6d9470f56290c6085eaaaf62f8c5";
+    await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
 
     const webhookResponse = await axios.post(webhookUrl, webhookData, {
       headers: { "Content-Type": "application/json" },
@@ -187,7 +192,6 @@ exports.handleQrScan = async (req, res, next) => {
   }
 };
 
-
 // Check account balance
 exports.checkBalance = async (req, res, next) => {
   try {
@@ -207,7 +211,6 @@ exports.checkBalance = async (req, res, next) => {
     next(err);
   }
 };
-
 
 exports.transferMoney = async (req, res, next) => {
   const { toAccount, amount } = req.body;
@@ -350,7 +353,9 @@ exports.fetchDetailsFromPhoneNumber = async (req, res) => {
     const account = await Account.findOne({ phoneNumber });
 
     if (!account) {
-      return res.status(404).json({ success: false, error: "Account not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found" });
     }
 
     res.status(200).json({
@@ -365,24 +370,25 @@ exports.fetchDetailsFromPhoneNumber = async (req, res) => {
   }
 };
 
-
 exports.qrCode = async (req, res) => {
   const accountNumber = req.user.accountNumber;
 
   try {
     console.log(accountNumber);
     if (!accountNumber) {
-      return res.status(404).json({ success: false, error: "Account Number undefined" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account Number undefined" });
     }
 
     // Fetch the account from the correct model
     const account = await Account.findOne({ accountNumber });
     console.log(account);
 
-    
-
     if (!account) {
-      return res.status(404).json({ success: false, error: "Account not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found" });
     }
 
     res.status(200).json({
@@ -395,5 +401,28 @@ exports.qrCode = async (req, res) => {
       success: false,
       error: "Internal server error",
     });
+  }
+};
+
+
+exports.processUserInteraction = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    // Fetch data from Redis
+    const userData = await redisClient.get(token);
+    if (!userData) {
+      return res.status(400).json({ success: false, error: "Invalid or expired token." });
+    }
+
+    // Parse the retrieved data
+    const parsedData = JSON.parse(userData);
+
+    console.log("User Data:", parsedData);
+
+    res.json({ success: true, data: parsedData });
+  } catch (err) {
+    console.error("Error processing interaction:", err);
+    res.status(400).json({ success: false, error: err.message });
   }
 };
