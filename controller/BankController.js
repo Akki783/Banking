@@ -170,13 +170,6 @@ exports.handleQrScan = async (req, res, next) => {
 
     await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
 
-    const webhookResponse = await axios.post(webhookUrl, webhookData, {
-      headers: { "Content-Type": "application/json" },
-    });
-
-    console.log("Webhook response status:", webhookResponse.status);
-    console.log("Webhook response data:", webhookResponse.data);
-
     // Redirect user to WhatsApp
     const whatsappNumber = "+918655741286";
     const whatsappMessage = encodeURIComponent(
