@@ -27,6 +27,7 @@ async function connectToRedis() {
   }
 }
 
+
 // Initialize Redis client on load
 (async () => {
   try {
