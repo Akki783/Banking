@@ -1,3 +1,4 @@
+require("dotenv").config()
 const redis = require("redis");
 
 let redisClient; // Declare redisClient at the top level
@@ -6,7 +7,7 @@ async function connectToRedis() {
   try {
     // Create Redis client with the connection string
     redisClient = redis.createClient({
-      url: "redis://red-ctkf8bogph6c739d179g:6379", // Replace with your actual Redis connection string
+      url: process.env.REDIS,
     });
 
     redisClient.on("connect", () => {
