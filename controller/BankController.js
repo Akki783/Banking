@@ -7,6 +7,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
+const connectToRedis = require("../config/redis");
 
 
 const config = {
