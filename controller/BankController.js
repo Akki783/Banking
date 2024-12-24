@@ -214,6 +214,7 @@ exports.handleQrScan = async (req, res, next) => {
     // Store user data in Redis with the reference ID as the key
     const userData = JSON.stringify({
       accountId: account._id,
+      accountNumber : account.accountNumber,
       name: account.name,
       email: account.email,
       phoneNumber: account.phoneNumber,
