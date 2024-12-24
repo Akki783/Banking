@@ -9,6 +9,7 @@ const {
   fetchDetailsFromPhoneNumber,
   qrCode,
   processUserInteraction,
+  checkPhoneNumber
 } = require("../controller/BankController");
 
 const { login, verifyToken } = require("../controller/login");
