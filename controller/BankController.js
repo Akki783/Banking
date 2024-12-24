@@ -9,7 +9,6 @@ const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
 const connectToRedis = require("../config/redis");
 
-
 const config = {
   cloudinary: {
     cloud_name: process.env.CLOUD_NAME || "dxnvzxkyf",
@@ -135,52 +134,54 @@ exports.createAccount = async (req, res, next) => {
 };
 
 // Handle QR Scan API
-// exports.handleQrScan = async (req, res, next) => {
-//   try {
-//     const accountId = req.params.accountId || req.query.accountId;
+/*
+exports.handleQrScan = async (req, res, next) => {
+  try {
+    const accountId = req.params.accountId || req.query.accountId;
 
-//     // Validate accountId
-//     if (!accountId) {
-//       return res
-//         .status(400)
-//         .json({ success: false, error: "Account ID is required." });
-//     }
+    // Validate accountId
+    if (!accountId) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Account ID is required." });
+    }
 
-//     // Fetch the account from the database
-//     const account = await Account.findById(accountId);
-//     if (!account) {
-//       return res
-//         .status(404)
-//         .json({ success: false, error: "Account not found." });
-//     }
+    // Fetch the account from the database
+    const account = await Account.findById(accountId);
+    if (!account) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found." });
+    }
 
-//     // Generate a unique token
-//     const uniqueToken = crypto.randomUUID();
+    // Generate a unique token
+    const uniqueToken = crypto.randomUUID();
 
-//     // Store user data in Redis with an expiry (e.g., 5 minutes)
-//     const userData = JSON.stringify({
-//       accountId: account._id,
-//       name: account.name,
-//       email: account.email,
-//       phoneNumber: account.phoneNumber,
-//     });
+    // Store user data in Redis with an expiry (e.g., 5 minutes)
+    const userData = JSON.stringify({
+      accountId: account._id,
+      name: account.name,
+      email: account.email,
+      phoneNumber: account.phoneNumber,
+    });
 
-//     await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
+    await redisClient.setEx(uniqueToken, 300, userData); // 300 seconds (5 minutes)
 
-//     // Redirect user to WhatsApp
-//     const whatsappNumber = "+918655741286";
-//     const whatsappMessage = encodeURIComponent(
-//       `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
-//     );
-//     const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}`;
+    // Redirect user to WhatsApp
+    const whatsappNumber = "+918655741286";
+    const whatsappMessage = encodeURIComponent(
+      `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code.`
+    );
+    const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}`;
 
-//     return res.redirect(whatsappRedirectUrl);
-//   } catch (err) {
-//     // Log the error
-//     console.error("Error during QR scan:", err);
-//     next(err);
-//   }
-// };
+    return res.redirect(whatsappRedirectUrl);
+  } catch (err) {
+    // Log the error
+    console.error("Error during QR scan:", err);
+    next(err);
+  }
+};
+*/
 
 exports.handleQrScan = async (req, res, next) => {
   try {
@@ -188,20 +189,25 @@ exports.handleQrScan = async (req, res, next) => {
 
     // Validate accountId
     if (!accountId) {
-      return res.status(400).json({ success: false, error: "Account ID is required." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Account ID is required." });
     }
 
     // Fetch the account from the database
     const account = await Account.findById(accountId);
     if (!account) {
-      return res.status(404).json({ success: false, error: "Account not found." });
+      return res
+        .status(404)
+        .json({ success: false, error: "Account not found." });
     }
 
     // Generate a unique token
     const uniqueToken = crypto.randomUUID();
 
     // Create a reference ID (could be a hash or just a shortened version of the token)
-    const referenceId = crypto.createHash('sha256').update(uniqueToken).digest('hex').substring(0, 10); // Example: first 10 chars of SHA256 hash
+    const hash = CryptoJS.SHA256(uniqueToken).toString(); // Generate SHA256 hash
+    const referenceId = hash.substring(0, 10); // Get the first 10 characters
 
     // Store user data in Redis with the reference ID as the key
     const userData = JSON.stringify({
@@ -471,7 +477,9 @@ exports.processUserInteraction = async (req, res) => {
     // Fetch data from Redis using the reference ID (not the token)
     const userData = await redisClient.get(referenceId);
     if (!userData) {
-      return res.status(400).json({ success: false, error: "Invalid or expired reference ID." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid or expired reference ID." });
     }
 
     // Parse the retrieved data
