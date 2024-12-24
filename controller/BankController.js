@@ -8,6 +8,8 @@ const jwt = require("jsonwebtoken");
 const { JWT_SECRET, TOKEN_EXPIRY } = require("./login");
 const baseUrl = process.env.BASE_URL || "http://localhost:4000";
 const connectToRedis = require("../config/redis");
+const crypto = require('crypto'); // For generating UUID
+const CryptoJS = require('crypto-js'); // For SHA256 hashing
 
 const config = {
   cloudinary: {
