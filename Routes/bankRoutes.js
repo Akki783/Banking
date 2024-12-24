@@ -37,5 +37,6 @@ router.get("/accounts/userDetails", fetchDetailsFromPhoneNumber);
 router.get("/accounts/qrCode", authenticateToken, qrCode);
 
 router.get("/getAccountData", processUserInteraction);
+router.get("/existingNumber", checkPhoneNumber);
 
 module.exports = router; // Export the router

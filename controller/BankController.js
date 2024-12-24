@@ -496,3 +496,36 @@ exports.processUserInteraction = async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 };
+
+exports.checkPhoneNumber = async (req, res, next) => {
+  const { phoneNumber } = req.body;
+
+  // Validate input
+  if (!phoneNumber) {
+    return res.status(400).json({
+      success: false,
+      error: 'Phone number is required.',
+    });
+  }
+
+  try {
+    // Check if phone number exists in the database
+    const user = await Account.findOne({ phoneNumber });
+
+    if (user) {
+      return res.status(200).json({
+        success: true,
+        message: 'Phone number exists.'
+      });
+    }
+
+    // Phone number does not exist
+    return res.status(404).json({
+      success: false,
+      message: 'Phone number does not exist.',
+    });
+  } catch (error) {
+    // Handle any errors
+    next(error);
+  }
+};
