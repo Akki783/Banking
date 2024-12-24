@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const Account = require('../model/user'); // Adjust path if needed
-
 const JWT_SECRET = 'your_secret_key_here'; // Use a strong secret key
 exports.JWT_SECRET = JWT_SECRET;
 const TOKEN_EXPIRY = '2h'; // Token expiry duration
@@ -57,5 +56,47 @@ exports.login = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+exports.verifyToken = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1]; // Extract token from "Bearer <token>"
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'No token provided.' });
+  }
+
+  try {
+    // Decode the token without verifying to access payload
+    const decoded = jwt.decode(token);
+
+    // Check custom expiresAt if present
+    if (decoded.expiresAt && decoded.expiresAt < Math.floor(Date.now() / 1000)) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token has expired.',
+      });
+    }
+
+    // Verify the token signature and expiration
+    const verified = jwt.verify(token, JWT_SECRET);
+
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid.',
+      user: verified, // Returning verified user data
+    });
+  } catch (error) {
+    // Handle invalid or expired token
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Token has expired.',
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid token.',
+    });
   }
 };
