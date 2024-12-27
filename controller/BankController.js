@@ -243,6 +243,7 @@ exports.checkBalance = async (req, res, next) => {
     // const { accountNumber } = req.body;
 
     const accountNumber = req.user.accountNumber;
+    console.log(accountNumber)
 
     const account = await Account.findOne({ accountNumber });
     if (!account) {
