@@ -253,6 +253,7 @@ exports.checkBalance = async (req, res, next) => {
 
     res.status(200).json({ success: true, balance: account });
   } catch (err) {
+    console.log("Error in checkBalance API : ",err)
     next(err);
   }
 };
