@@ -225,7 +225,7 @@ exports.handleQrScan = async (req, res, next) => {
     // Redirect user to WhatsApp with the reference ID, not the token
     const whatsappNumber = "+918655741286";
     const whatsappMessage = encodeURIComponent(
-      `Hello ${account.name}, your account with account number ${account.accountNumber} is being accessed via QR code. Use this reference ID: ${referenceId}`
+      `Hello, please use the following ID, ${referenceId}, to complete your money transfer.`
     );
     const whatsappRedirectUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
