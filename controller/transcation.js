@@ -44,17 +44,14 @@ exports.getUserTransactions = async (req, res, next) => {
 };
 
 exports.getUserTransactionsForMessage = async (req, res, next) => {
-  const { accountNumber } = req.user;
+  const accountNumber = req.user.accountNumber;
 
   try {
-    // Validate the presence of accountNumber and password
     if (!accountNumber) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Login Is Required.",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Login Is Required.",
+      });
     }
 
     // Find the account by account number
@@ -64,13 +61,6 @@ exports.getUserTransactionsForMessage = async (req, res, next) => {
       return res
         .status(404)
         .json({ success: false, error: "Account not found." });
-    }
-
-    // Compare the provided password with the stored password (plain text comparison)
-    if (userAccount.password !== password) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid password." });
     }
 
     // Fetch all transactions related to this account number
@@ -108,3 +98,5 @@ exports.getUserTransactionsForMessage = async (req, res, next) => {
     next(err);
   }
 };
+
+
