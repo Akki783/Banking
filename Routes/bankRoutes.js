@@ -32,7 +32,7 @@ router.get("/scan", handleQrScan);
 router.get("/scan/:accountId", handleQrScan);
 
 router.get("/transcationHistory", authenticateToken, getUserTransactions);
-router.get("/getUserTransactionsForMessage", getUserTransactionsForMessage);
+router.get("/getUserTransactionsForMessage",authenticateToken, getUserTransactionsForMessage);
 
 router.get("/accounts/userDetails", fetchDetailsFromPhoneNumber);
 router.get("/accounts/qrCode", authenticateToken, qrCode);
